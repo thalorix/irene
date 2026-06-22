@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="it" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Planner PRO</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #f1f5f9;
+            --text-dim: #94a3b8;
+            --accent: #6366f1;
+            --accent2: #10b981;
+            --border: #334155;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        [data-theme="light"] {
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #0f172a;
+            --text-dim: #64748b;
+            --accent: #6366f1;
+            --accent2: #10b981;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .header {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .search-bar {
+            display: none;
+            padding: 10px 20px;
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            gap: 10px;
+            align-items: center;
+        }
+
+        .search-bar input {
+            flex: 1;
+            padding: 10px;
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .tabs {
+            display: flex;
+            overflow-x: auto;
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 0 10px;
+        }
+
+        .tab {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            font-size: 14px;
+            color: var(--text-dim);
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--text);
+        }
+
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .card h3 {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--accent2);
+            color: white;
+        }
+
+        input,
+        select,
+        textarea {
+            padding: 10px;
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .task-list {
+            list-style: none;
+        }
+
+        .task-list li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+
+        .task-list li:hover {
+            background: var(--bg);
+        }
+
+        .task-list li.done .task-text {
+            text-decoration: line-through;
+            color: var(--text-dim);
+        }
+
+        .task-text {
+            flex: 1;
+        }
+
+        .task-time {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .task-cat {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            color: white;
+            font-weight: 500;
+        }
+
+        .btn-delete {
+            background: transparent;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px 8px;
+        }
+
+        .btn-delete:hover {
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 4px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--bg);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            transition: width 0.3s;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 4px;
+        }
+
+        .eisenhower-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .quadrant {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            min-height: 200px;
+        }
+
+        .quadrant h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .q1 {
+            border-top: 4px solid #ef4444;
+        }
+
+        .q2 {
+            border-top: 4px solid #f59e0b;
+        }
+
+        .q3 {
+            border-top: 4px solid #3b82f6;
+        }
+
+        .q4 {
+            border-top: 4px solid #6b7280;
+        }
+
+        .add-mini {
+            display: flex;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .add-mini input {
+            flex: 1;
+            padding: 6px;
+            font-size: 13px;
+        }
+
+        .add-mini button {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        .time-block {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-left: 4px solid var(--accent);
+            background: var(--bg);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .time-block .time {
+            font-weight: 600;
+            min-width: 110px;
+        }
+
+        .time-block .attivita {
+            flex: 1;
+        }
+
+        .okr-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+        }
+
+        .kr-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+        }
+
+        .habit-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            transition: all 0.2s;
+        }
+
+        .habit-card.done {
+            border-color: var(--accent2);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .habit-name {
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .habit-streak {
+            font-size: 13px;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+
+        .habit-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-done {
+            flex: 1;
+            padding: 8px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .btn-done:hover {
+            opacity: 0.9;
+        }
+
+        .recurring {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .task-freq {
+            font-size: 11px;
+            padding: 2px 8px;
+            background: var(--accent);
+            color: white;
+            border-radius: 12px;
+        }
+
+        .contesto {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .contesto h3 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .count {
+            background: var(--accent);
+            color: white;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .ctx-select {
+            padding: 4px;
+            font-size: 12px;
+        }
+
+        .ai-chat {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            height: 400px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+
+        .ai-message {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .ai-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .ai-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .ai-text {
+            background: var(--card);
+            padding: 10px 14px;
+            border-radius: 12px;
+            max-width: 80%;
+            line-height: 1.5;
+        }
+
+        .ai-message.user .ai-text {
+            background: var(--accent);
+            color: white;
+        }
+
+        .ai-input-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .ai-input-row input {
+            flex: 1;
+        }
+
+        .ai-quick {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .ai-quick button {
+            padding: 6px 12px;
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .ai-quick button:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .heatmap {
+            display: grid;
+            grid-template-columns: repeat(30, 1fr);
+            gap: 3px;
+        }
+
+        .heatmap-cell {
+            aspect-ratio: 1;
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        .heatmap-cell.l1 {
+            background: rgba(99, 102, 241, 0.3);
+        }
+
+        .heatmap-cell.l2 {
+            background: rgba(99, 102, 241, 0.5);
+        }
+
+        .heatmap-cell.l3 {
+            background: rgba(99, 102, 241, 0.7);
+        }
+
+        .heatmap-cell.l4 {
+            background: var(--accent);
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .cat-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 16px;
+            color: white;
+            margin: 4px;
+            font-size: 13px;
+        }
+
+        .cat-chip button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 25px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 15px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .notif-status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            background: var(--bg);
+            color: var(--text-dim);
+        }
+
+        .notif-status.active {
+            background: var(--accent2);
+            color: white;
+        }
+
+        /* ============ CALENDARIO ============ */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .calendar-header h2 {
+            margin: 0;
+            text-transform: capitalize;
+            flex: 1;
+            text-align: center;
+        }
+
+        .calendar-nav-btn {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .calendar-nav-btn:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+
+        .calendar-grid .day-name {
+            text-align: center;
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--text-dim);
+            padding: 8px 0;
+            text-transform: uppercase;
+        }
+
+        .calendar-cell {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px;
+            min-height: 90px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .calendar-cell:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+
+        .calendar-cell.empty {
+            background: transparent;
+            border: 1px dashed var(--border);
+            cursor: default;
+        }
+
+        .calendar-cell.empty:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .calendar-cell.today {
+            border-color: var(--accent);
+            background: linear-gradient(135deg, var(--card), rgba(99, 102, 241, 0.1));
+        }
+
+        .calendar-cell.today .cell-day {
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .cell-day {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .cell-event {
+            font-size: 11px;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-bottom: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cell-more {
+            font-size: 10px;
+            color: var(--text-dim);
+            text-align: center;
+            margin-top: 2px;
+        }
+
+        .upcoming-events {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .upcoming-event {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--accent);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .notif-settings {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .notif-settings h3 {
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .notif-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 12px 0;
+            flex-wrap: wrap;
+        }
+
+        .notif-row label {
+            min-width: 180px;
+            font-weight: 500;
+        }
+
+        .notif-info {
+            background: rgba(99, 102, 241, 0.1);
+            border-left: 3px solid var(--accent);
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-top: 15px;
+            color: var(--text-dim);
+        }
+
+        .color-picker-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .color-picker-row input[type="color"] {
+            width: 50px;
+            height: 36px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .calendar-cell {
+                min-height: 60px;
+                padding: 4px;
+            }
+
+            .cell-event {
+                font-size: 9px;
+                padding: 1px 3px;
+            }
+
+            .cell-day {
+                font-size: 12px;
+            }
+
+            .eisenhower-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <div class="logo">🎯 Life Planner PRO</div>
+        <div class="header-actions">
+            <button class="icon-btn" id="btn-theme" title="Tema">🌙</button>
+            <button class="icon-btn" id="btn-export-quick" title="Backup">💾</button>
+            <button class="icon-btn" id="btn-search" title="Cerca">🔍</button>
+        </div>
+    </div>
+
+    <div class="search-bar" id="search-bar">
+        <input type="text" id="search-input" placeholder="🔍 Cerca task, eventi, abitudini...">
+        <button class="icon-btn" id="btn-close-search">✕</button>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" data-view="oggi">📅 Oggi</div>
+        <div class="tab" data-view="okr">🎯 OKR</div>
+        <div class="tab" data-view="gtd">📥 GTD</div>
+        <div class="tab" data-view="eisen">⚡ Eisen</div>
+        <div class="tab" data-view="time">🕐 Time</div>
+        <div class="tab" data-view="12w">🔥 12W</div>
+        <div class="tab" data-view="stats">📊 Stats</div>
+        <div class="tab" data-view="ai">🤖 AI</div>
+        <div class="tab" data-view="calendar">📆 Calendario</div>
+        <div class="tab" data-view="settings">⚙️ Dati</div>
+    </div>
+
+    <div class="container">
+
+        <!-- OGGI -->
+        <div class="view active" id="view-oggi">
+            <div class="card">
+                <h2>📅 Oggi - <span id="data-oggi"></span></h2>
+                <div class="card" style="background:var(--bg); margin-bottom:15px;">
+                    <h3>🔁 Abitudini</h3>
+                    <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+                        <input type="text" id="input-habit" placeholder="Nuova abitudine...">
+                        <select id="select-habit-freq">
+                            <option value="daily">📅 Giornaliera</option>
+                            <option value="weekly">📆 Settimanale</option>
+                        </select>
+                        <button class="btn btn-primary" id="btn-add-habit">+</button>
+                    </div>
+                    <div class="grid-2" id="habits-grid"></div>
+                </div>
+                <div class="card" style="background:var(--bg); margin-bottom:15px;">
+                    <h3>Task ricorrenti</h3>
+                    <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+                        <input type="text" id="input-recurring" placeholder="Task ricorrente...">
+                        <input type="time" id="input-recurring-time">
+                        <select id="select-recurring-freq">
+                            <option value="daily">📅 Ogni giorno</option>
+                            <option value="weekdays">💼 Lun-Ven</option>
+                            <option value="weekend">🏖️ Weekend</option>
+                            <option value="weekly">📆 Settimanale</option>
+                        </select>
+                        <button class="btn btn-primary" id="btn-add-recurring">+</button>
+                    </div>
+                    <ul id="lista-recurring" class="task-list"></ul>
+                </div>
+                <h3>📋 Task di oggi</h3>
+                <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+                    <input type="text" id="input-task-oggi" placeholder="Nuovo task..."
+                        style="flex:1; min-width:200px;">
+                    <input type="time" id="input-time-oggi">
+                    <select id="select-task-cat-oggi"></select>
+                    <button class="btn btn-primary" id="btn-add-oggi">+</button>
+                </div>
+                <ul class="task-list" id="lista-oggi"></ul>
+                <div style="margin-top:15px;">
+                    <h3>📊 Statistiche oggi</h3>
+                    <div class="progress-bar">
+                        <div class="progress" id="progress-oggi"></div>
+                    </div>
+                    <p id="stats-oggi">0/0 completati</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- OKR -->
+        <div class="view" id="view-okr">
+            <div class="card">
+                <h2>🎯 OKR</h2>
+                <p style="color:var(--text-dim); margin-bottom:15px;">Obiettivi annuali con risultati misurabili</p>
+                <button class="btn btn-primary" id="btn-add-okr">+ Nuovo Obiettivo</button>
+                <div id="lista-okr" style="margin-top:15px;"></div>
+            </div>
+        </div>
+
+        <!-- GTD -->
+        <div class="view" id="view-gtd">
+            <div class="card">
+                <h2>📥 GTD - Inbox</h2>
+                <p style="color:var(--text-dim); margin-bottom:15px;">Cattura tutto, poi organizza per contesto</p>
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="input-gtd" placeholder="Cosa ti passa per la testa?" style="flex:1;">
+                    <button class="btn btn-primary" id="btn-add-gtd">+</button>
+                </div>
+                <div id="gtd-contesti" style="margin-top:20px;"></div>
+            </div>
+        </div>
+
+        <!-- EISENHOWER -->
+        <div class="view" id="view-eisen">
+            <div class="card">
+                <h2>⚡ Matrice Eisenhower</h2>
+                <p style="color:var(--text-dim); margin-bottom:15px;">Urgente × Importante</p>
+                <div class="eisenhower-grid">
+                    <div class="quadrant q1">
+                        <h3>🔥 FAI ORA</h3>
+                        <p style="font-size:11px;color:var(--text-dim);">Urgente + Importante</p>
+                        <ul class="task-list" id="lista-q1"></ul>
+                        <div class="add-mini"><input placeholder="Task..."><button class="btn btn-primary"
+                                data-quadrante="1">+</button></div>
+                    </div>
+                    <div class="quadrant q2">
+                        <h3>📅 PIANIFICA</h3>
+                        <p style="font-size:11px;color:var(--text-dim);">Importante, non urgente</p>
+                        <ul class="task-list" id="lista-q2"></ul>
+                        <div class="add-mini"><input placeholder="Task..."><button class="btn btn-primary"
+                                data-quadrante="2">+</button></div>
+                    </div>
+                    <div class="quadrant q3">
+                        <h3>👥 DELEGA</h3>
+                        <p style="font-size:11px;color:var(--text-dim);">Urgente, non importante</p>
+                        <ul class="task-list" id="lista-q3"></ul>
+                        <div class="add-mini"><input placeholder="Task..."><button class="btn btn-primary"
+                                data-quadrante="3">+</button></div>
+                    </div>
+                    <div class="quadrant q4">
+                        <h3>🗑️ ELIMINA</h3>
+                        <p style="font-size:11px;color:var(--text-dim);">Né urgente né importante</p>
+                        <ul class="task-list" id="lista-q4"></ul>
+                        <div class="add-mini"><input placeholder="Task..."><button class="btn btn-primary"
+                                data-quadrante="4">+</button></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TIME BLOCKING -->
+        <div class="view" id="view-time">
+            <div class="card">
+                <h2>🕐 Time Blocking</h2>
+                <p style="color:var(--text-dim); margin-bottom:15px;">Pianifica la tua giornata a blocchi</p>
+                <div
+                    style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; margin-bottom:15px;">
+                    <input type="time" id="input-tb-start">
+                    <input type="time" id="input-tb-end">
+                    <input type="text" id="input-tb-attivita" placeholder="Attività...">
+                    <select id="input-tb-categoria"></select>
+                    <button class="btn btn-primary" id="btn-add-tb">+</button>
+                </div>
+                <div id="timeline"></div>
+            </div>
+        </div>
+
+        <!-- 12 WEEK -->
+        <div class="view" id="view-12w">
+            <div class="card">
+                <h2>🔥 12 Week Year</h2>
+                <p style="color:var(--text-dim); margin-bottom:15px;">Tratta 12 settimane come un anno</p>
+                <div style="margin-bottom:15px;">
+                    <p>Settimana <b id="week-current">1</b> di 12</p>
+                    <p style="font-size:12px;color:var(--text-dim);" id="week-dates"></p>
+                    <div class="progress-bar">
+                        <div class="progress" id="progress-12w"></div>
+                    </div>
+                    <p id="week-percent" style="text-align:right;font-size:12px;">0%</p>
+                </div>
+                <button class="btn btn-primary" id="btn-add-12w">+ Nuovo obiettivo 12W</button>
+                <ul class="task-list" id="lista-12w" style="margin-top:15px;"></ul>
+            </div>
+        </div>
+
+        <!-- STATS -->
+        <div class="view" id="view-stats">
+            <div class="card">
+                <h2>📊 Statistiche</h2>
+                <p style="color:var(--text-dim); margin-bottom:15px;">Analisi della tua produttività</p>
+                <div class="grid-4">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-streak">0</div>
+                        <div class="stat-label">🔥 Giorni di streak</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-total">0</div>
+                        <div class="stat-label">✅ Task completati</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-today">0%</div>
+                        <div class="stat-label">📈 Produttività oggi</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-best">0</div>
+                        <div class="stat-label">🏆 Record in un giorno</div>
+                    </div>
+                </div>
+                <h3 style="margin-top:20px;">📈 Produttività ultimi 7 giorni</h3>
+                <canvas id="chart-week" width="600" height="250"></canvas>
+                <h3 style="margin-top:20px;">Distribuzione per categoria</h3>
+                <canvas id="chart-categories" width="600" height="300"></canvas>
+                <h3 style="margin-top:20px;">🔥 Streak calendario (ultimi 30 giorni)</h3>
+                <div class="heatmap" id="heatmap"></div>
+                <button class="btn btn-danger" id="btn-reset-stats" style="margin-top:15px;">⚠️ Reset
+                    statistiche</button>
+            </div>
+        </div>
+
+        <!-- AI -->
+        <div class="view" id="view-ai">
+            <div class="card">
+                <h2>🤖 AI Assistant</h2>
+                <p style="color:var(--text-dim); margin-bottom:15px;">Il tuo coach di produttività</p>
+                <div class="ai-chat" id="ai-chat">
+                    <div class="ai-message">
+                        <div class="ai-avatar">🤖</div>
+                        <div class="ai-text">Ciao! Sono il tuo AI Assistant.<br><br>Prova:<br>• "Cosa dovrei fare
+                            ora?"<br>• "Analizza la mia produttività"<br>• "Dammi un consiglio"<br>• "Motivami!"</div>
+                    </div>
+                </div>
+                <div class="ai-input-row">
+                    <input type="text" id="ai-input" placeholder="Chiedi qualcosa...">
+                    <button class="btn btn-primary" id="btn-ai-send">➤</button>
+                </div>
+                <div class="ai-quick">
+                    <button class="ai-quick" data-q="Cosa dovrei fare ora?">🎯 Priorità</button>
+                    <button class="ai-quick" data-q="Analizza la mia produttività">📊 Analisi</button>
+                    <button class="ai-quick" data-q="Dammi un consiglio">💡 Consiglio</button>
+                    <button class="ai-quick" data-q="Motivami!">🔥 Motivami</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CALENDARIO -->
+        <div class="view" id="view-calendar">
+            <div class="card">
+                <h2>📆 Calendario</h2>
+                <p style="color:var(--text-dim); margin-bottom:15px;">Visualizza e gestisci i tuoi eventi</p>
+                <div class="calendar-header">
+                    <button class="calendar-nav-btn" id="btn-cal-prev">◀</button>
+                    <h2 id="calendar-title">Giugno 2026</h2>
+                    <button class="calendar-nav-btn" id="btn-cal-next">▶</button>
+                    <button class="calendar-nav-btn" id="btn-cal-today">Oggi</button>
+                </div>
+                <div class="calendar-grid" id="calendar-grid">
+                    <div class="day-name">Lun</div>
+                    <div class="day-name">Mar</div>
+                    <div class="day-name">Mer</div>
+                    <div class="day-name">Gio</div>
+                    <div class="day-name">Ven</div>
+                    <div class="day-name">Sab</div>
+                    <div class="day-name">Dom</div>
+                </div>
+                <button class="btn btn-primary" id="btn-add-event">+ Nuovo Evento</button>
+
+                <div class="notif-settings">
+                    <h3>🔔 Notifiche di Sistema</h3>
+                    <p style="color:var(--text-dim); font-size:13px;">Ricevi notifiche native dal tuo sistema operativo
+                        quando si avvicinano gli eventi.</p>
+                    <div class="notif-row">
+                        <label>🖥️ Sistema operativo:</label>
+                        <select id="select-notif-os">
+                            <option value="linux">🐧 Linux</option>
+                            <option value="macos">🍎 macOS</option>
+                            <option value="windows">🪟 Windows</option>
+                        </select>
+                        <span id="detected-os" style="font-size:12px; color:var(--text-dim);"></span>
+                    </div>
+                    <div class="notif-row">
+                        <label>🔔 Avvisami prima (minuti):</label>
+                        <input type="number" id="input-notif-advance" min="1" max="1440" value="15"
+                            style="width:100px;">
+                    </div>
+                    <div class="notif-row">
+                        <button class="btn btn-primary" id="btn-download-notif-script">⬇️ Scarica script
+                            notifiche</button>
+                        <button class="btn btn-secondary" id="btn-copy-crontab">📋 Copia comando crontab</button>
+                    </div>
+                    <div class="notif-info">
+                        ℹ️ <b>Come funziona:</b> lo script controlla gli eventi e invia notifiche native. Eseguilo
+                        manualmente o aggiungilo al crontab per l'automazione.
+                    </div>
+                </div>
+
+                <h3 style="margin-top:25px;">📅 Prossimi eventi</h3>
+                <div class="upcoming-events" id="upcoming-events">
+                    <p style="color:var(--text-dim); text-align:center; padding:20px;">Nessun evento programmato</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div class="view" id="view-settings">
+            <div class="card">
+                <h2>⚙️ Controllo Totale dei Dati</h2>
+                <p style="color:var(--text-dim);">I tuoi dati sono tuoi. Sempre.</p>
+                <div class="card" style="background:var(--bg); margin-top:15px;">
+                    <h3>🔐 Privacy & Sicurezza</h3>
+                    <p style="color:var(--text-dim); font-size:13px;">I tuoi dati restano nel tuo browser. Nessun
+                        server, nessun cloud, nessun tracciamento.</p>
+                    <div class="grid-2" style="margin-top:15px;">
+                        <div>📊 Dimensione dati: <b id="data-size">-</b></div>
+                        <div>📅 Creato il: <b id="data-created">-</b></div>
+                        <div>🔄 Ultimo backup: <b id="data-last-backup">-</b></div>
+                        <div>📝 Task totali: <b id="data-tasks-count">-</b></div>
+                    </div>
+                </div>
+                <div class="card" style="background:var(--bg); margin-top:15px;">
+                    <h3>🏷️ Categorie Personalizzate</h3>
+                    <p style="color:var(--text-dim); font-size:13px; margin-bottom:10px;">Crea, modifica ed elimina le
+                        tue categorie per GTD e Time Blocking.</p>
+                    <h4 style="margin-top:15px;">📥 Categorie GTD</h4>
+                    <div id="cat-list-gtd"></div>
+                    <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+                        <input type="text" id="input-new-cat-gtd" placeholder="Nome categoria">
+                        <input type="text" id="input-new-cat-gtd-icon" placeholder="Icona" style="width:60px;">
+                        <input type="color" id="input-new-cat-gtd-color" value="#6366f1">
+                        <button class="btn btn-primary" id="btn-add-cat-gtd">+</button>
+                    </div>
+                    <h4 style="margin-top:15px;">🕐 Categorie Time Blocking</h4>
+                    <div id="cat-list-tb"></div>
+                    <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+                        <input type="text" id="input-new-cat-tb" placeholder="Nome categoria">
+                        <input type="text" id="input-new-cat-tb-icon" placeholder="Icona" style="width:60px;">
+                        <input type="color" id="input-new-cat-tb-color" value="#6366f1">
+                        <button class="btn btn-primary" id="btn-add-cat-tb">+</button>
+                    </div>
+                </div>
+                <div class="card" style="background:var(--bg); margin-top:15px;">
+                    <h3>💾 Backup & Export</h3>
+                    <p style="color:var(--text-dim); font-size:13px; margin-bottom:10px;">Esporta i tuoi dati in diversi
+                        formati per averne sempre il controllo.</p>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="btn btn-primary" id="btn-export-json">📦 Export JSON (completo)</button>
+                        <button class="btn btn-secondary" id="btn-export-md">📝 Export Markdown (leggibile)</button>
+                        <button class="btn btn-secondary" id="btn-export-csv">📊 Export CSV (Excel)</button>
+                        <button class="btn btn-success" id="btn-auto-backup">🔄 Backup automatico</button>
+                    </div>
+                </div>
+                <div class="card" style="background:var(--bg); margin-top:15px;">
+                    <h3>📥 Import & Ripristino</h3>
+                    <p style="color:var(--text-dim); font-size:13px; margin-bottom:10px;">Importa dati da un backup
+                        precedente.</p>
+                    <input type="file" id="file-import2" accept=".json" style="display:none;">
+                    <button class="btn btn-secondary" id="btn-import-json">📥 Importa JSON</button>
+                </div>
+                <div class="card" style="background:var(--bg); margin-top:15px; border-color:var(--danger);">
+                    <h3>⚠️ Zona Pericolosa</h3>
+                    <p style="color:var(--text-dim); font-size:13px; margin-bottom:10px;">Azioni irreversibili. Procedi
+                        con cautela.</p>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="btn btn-danger" id="btn-clear-today">🗑️ Cancella task di oggi</button>
+                        <button class="btn btn-danger" id="btn-clear-all">Cancella TUTTI i dati</button>
+                        <button class="btn btn-danger" id="btn-reset-app">🔄 Reset completo app</button>
+                    </div>
+                </div>
+                <div class="card" style="background:var(--bg); margin-top:15px;">
+                    <h3>🔔 Notifiche Browser</h3>
+                    <p style="color:var(--text-dim); font-size:13px; margin-bottom:10px;">Abilita le notifiche per
+                        essere avvisato dei task.</p>
+                    <button class="btn btn-primary" id="btn-enable-notif">🔔 Abilita notifiche</button>
+                    <span class="notif-status" id="notif-status">Non attive</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL OKR -->
+    <div class="modal" id="modal-okr">
+        <div class="modal-content">
+            <h2>🎯 Nuovo Obiettivo OKR</h2>
+            <div class="form-group">
+                <label>Obiettivo (qualitativo)</label>
+                <input type="text" id="okr-titolo" placeholder="Es: Diventare fluente in inglese">
+            </div>
+            <div class="form-group">
+                <label>Key Result 1 (misurabile)</label>
+                <input type="text" id="okr-kr1" placeholder="Es: Superare esame B2">
+            </div>
+            <div class="form-group">
+                <label>Key Result 2</label>
+                <input type="text" id="okr-kr2" placeholder="Es: Leggere 5 libri in inglese">
+            </div>
+            <div class="form-group">
+                <label>Key Result 3</label>
+                <input type="text" id="okr-kr3" placeholder="Es: 30 lezioni con madrelingua">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="btn-cancel-okr">Annulla</button>
+                <button class="btn btn-primary" id="btn-save-okr">Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EVENTO -->
+    <div class="modal" id="modal-event">
+        <div class="modal-content">
+            <h2>📅 Nuovo Evento</h2>
+            <div class="form-group">
+                <label>Titolo evento</label>
+                <input type="text" id="input-event-title" placeholder="Es: Riunione team">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Data</label>
+                    <input type="date" id="input-event-date">
+                </div>
+                <div class="form-group">
+                    <label>Ora</label>
+                    <input type="time" id="input-event-time">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Durata (minuti)</label>
+                <input type="number" id="input-event-duration" value="60" min="5">
+            </div>
+            <div class="form-group">
+                <label>Descrizione (opzionale)</label>
+                <textarea id="input-event-desc" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Colore</label>
+                <div class="color-picker-row">
+                    <input type="color" id="input-event-color" value="#6366f1">
+                    <span style="font-size:12px; color:var(--text-dim);">Scegli un colore per l'evento</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>🔔 Notifica prima (minuti)</label>
+                <input type="number" id="input-event-notify" value="15" min="0" max="1440">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="btn-cancel-event">Annulla</button>
+                <button class="btn btn-primary" id="btn-save-event">Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

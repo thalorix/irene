@@ -4,12 +4,11 @@ let stato = {
     timeblocks: [], okr: [], week12: [], week12Start: null, theme: 'dark',
     habits: [], recurring: [],
     stats: { history: {}, streak: 0, bestDay: 0, totalCompleted: 0 },
-    // NUOVE: categorie personalizzate e metadati
     categories: {
         gtd: [
             { id: 'inbox', name: 'Inbox', icon: '📥', color: '#6366f1' },
-            { id: 'casa', name: 'Casa', icon: '', color: '#10b981' },
-            { id: 'lavoro', name: 'Lavoro', icon: '', color: '#f59e0b' },
+            { id: 'casa', name: 'Casa', icon: '🏠', color: '#10b981' },
+            { id: 'lavoro', name: 'Lavoro', icon: '💼', color: '#f59e0b' },
             { id: 'pc', name: 'PC', icon: '💻', color: '#8b5cf6' },
             { id: 'fuori', name: 'Fuori', icon: '🚶', color: '#ec4899' }
         ],
@@ -21,10 +20,13 @@ let stato = {
             { id: 'riposo', name: 'Riposo', icon: '😴', color: '#94a3b8' }
         ]
     },
-    meta: { created: new Date().toISOString(), lastBackup: null }
+    meta: { created: new Date().toISOString(), lastBackup: null },
+    events: [],
+    calendarNotif: { enabled: false, advanceMin: 15, os: 'linux' }
 };
 
 function salva() { localStorage.setItem('lifePlanner', JSON.stringify(stato)); }
+
 function carica() {
     const d = localStorage.getItem('lifePlanner');
     if (d) {
@@ -32,14 +34,17 @@ function carica() {
         stato = { ...stato, ...parsed };
         if (!stato.habits) stato.habits = [];
         if (!stato.recurring) stato.recurring = [];
+        if (!stato.events) stato.events = [];
+        if (!stato.calendarNotif) stato.calendarNotif = { enabled: false, advanceMin: 15, os: 'linux' };
         if (!stato.stats) stato.stats = { history: {}, streak: 0, bestDay: 0, totalCompleted: 0 };
         if (!stato.categories) stato.categories = {
-            gtd: [{id:'inbox',name:'Inbox',icon:'📥',color:'#6366f1'},{id:'casa',name:'Casa',icon:'🏠',color:'#10b981'},{id:'lavoro',name:'Lavoro',icon:'💼',color:'#f59e0b'},{id:'pc',name:'PC',icon:'💻',color:'#8b5cf6'},{id:'fuori',name:'Fuori',icon:'🚶',color:'#ec4899'}],
-            tb: [{id:'lavoro',name:'Lavoro',icon:'💼',color:'#6366f1'},{id:'studio',name:'Studio',icon:'📚',color:'#10b981'},{id:'sport',name:'Sport',icon:'🏃',color:'#f59e0b'},{id:'personale',name:'Personale',icon:'🏠',color:'#ec4899'},{id:'riposo',name:'Riposo',icon:'😴',color:'#94a3b8'}]
+            gtd: [{ id: 'inbox', name: 'Inbox', icon: '📥', color: '#6366f1' }, { id: 'casa', name: 'Casa', icon: '🏠', color: '#10b981' }, { id: 'lavoro', name: 'Lavoro', icon: '💼', color: '#f59e0b' }, { id: 'pc', name: 'PC', icon: '💻', color: '#8b5cf6' }, { id: 'fuori', name: 'Fuori', icon: '🚶', color: '#ec4899' }],
+            tb: [{ id: 'lavoro', name: 'Lavoro', icon: '💼', color: '#6366f1' }, { id: 'studio', name: 'Studio', icon: '📚', color: '#10b981' }, { id: 'sport', name: 'Sport', icon: '🏃', color: '#f59e0b' }, { id: 'personale', name: 'Personale', icon: '🏠', color: '#ec4899' }, { id: 'riposo', name: 'Riposo', icon: '😴', color: '#94a3b8' }]
         };
         if (!stato.meta) stato.meta = { created: new Date().toISOString(), lastBackup: null };
     }
 }
+
 function uid() { return Date.now().toString(36) + Math.random().toString(36).substr(2); }
 function oggiStr() { return new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' }); }
 function oggiKey() { return new Date().toISOString().split('T')[0]; }
@@ -53,6 +58,7 @@ document.querySelectorAll('.tab').forEach(tab => {
         document.getElementById('view-' + tab.dataset.view).classList.add('active');
         if (tab.dataset.view === 'stats') renderStats();
         if (tab.dataset.view === 'settings') renderSettings();
+        if (tab.dataset.view === 'calendar') { renderCalendar(); initCalendarSettings(); }
     });
 });
 
@@ -60,7 +66,7 @@ document.querySelectorAll('.tab').forEach(tab => {
 document.getElementById('btn-theme').addEventListener('click', () => {
     stato.theme = stato.theme === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', stato.theme);
-    document.getElementById('btn-theme').textContent = stato.theme === 'dark' ? '🌙' : '️';
+    document.getElementById('btn-theme').textContent = stato.theme === 'dark' ? '🌙' : '☀️';
     salva();
 });
 
@@ -83,16 +89,13 @@ document.getElementById('search-input').addEventListener('input', (e) => {
     });
 });
 
-// ============ CATEGORIE PERSONALIZZATE ============
+// ============ CATEGORIE ============
 function renderCatSelects() {
-    // Select per task oggi
     const selOggi = document.getElementById('select-task-cat-oggi');
     selOggi.innerHTML = '<option value="">📁 Nessuna</option>';
     stato.categories.tb.forEach(c => {
         selOggi.innerHTML += `<option value="${c.id}">${c.icon} ${c.name}</option>`;
     });
-
-    // Select per time blocking
     const selTb = document.getElementById('input-tb-categoria');
     selTb.innerHTML = '';
     stato.categories.tb.forEach(c => {
@@ -101,7 +104,6 @@ function renderCatSelects() {
 }
 
 function renderCatChips() {
-    // GTD
     const listGtd = document.getElementById('cat-list-gtd');
     listGtd.innerHTML = '';
     stato.categories.gtd.forEach(c => {
@@ -114,7 +116,7 @@ function renderCatChips() {
     listGtd.querySelectorAll('.cat-del').forEach(btn => {
         btn.addEventListener('click', () => {
             const id = btn.dataset.id;
-            if (['inbox','casa','lavoro','pc','fuori'].includes(id)) {
+            if (['inbox', 'casa', 'lavoro', 'pc', 'fuori'].includes(id)) {
                 alert('Questa è una categoria di base, non può essere eliminata.');
                 return;
             }
@@ -125,7 +127,6 @@ function renderCatChips() {
         });
     });
 
-    // Time Blocking
     const listTb = document.getElementById('cat-list-tb');
     listTb.innerHTML = '';
     stato.categories.tb.forEach(c => {
@@ -138,7 +139,7 @@ function renderCatChips() {
     listTb.querySelectorAll('.cat-del').forEach(btn => {
         btn.addEventListener('click', () => {
             const id = btn.dataset.id;
-            if (['lavoro','studio','sport','personale','riposo'].includes(id)) {
+            if (['lavoro', 'studio', 'sport', 'personale', 'riposo'].includes(id)) {
                 alert('Questa è una categoria di base, non può essere eliminata.');
                 return;
             }
@@ -196,16 +197,15 @@ function renderHabits() {
             <div class="habit-name">${h.freq === 'daily' ? '📅' : '📆'} ${h.name}</div>
             <div class="habit-streak">🔥 Streak: ${h.streak} giorni</div>
             <div class="habit-actions">
-                <button class="btn-done">${doneToday ? '✅ Fatto' : ' Segna'}</button>
-                <button class="btn-del">🗑️</button>
-            </div>
-        `;
+                <button class="btn-done">${doneToday ? '✅ Fatto' : '✓ Segna'}</button>
+                <button class="btn-delete">🗑️</button>
+            </div>`;
         card.querySelector('.btn-done').addEventListener('click', () => {
             if (!doneToday) { h.streak++; h.lastDone = today; aggiornaStats(); }
             else { h.streak = Math.max(0, h.streak - 1); h.lastDone = null; }
             salva(); renderHabits();
         });
-        card.querySelector('.btn-del').addEventListener('click', () => {
+        card.querySelector('.btn-delete').addEventListener('click', () => {
             stato.habits = stato.habits.filter(x => x.id !== h.id);
             salva(); renderHabits();
         });
@@ -230,8 +230,7 @@ function generaRecurringOggi() {
     const dayOfWeek = today.getDay();
     const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-    const todayKey = oggiKey();
-
+    const todayKeyVal = oggiKey();
     stato.recurring.forEach(r => {
         let shouldGenerate = false;
         if (r.freq === 'daily') shouldGenerate = true;
@@ -241,12 +240,11 @@ function generaRecurringOggi() {
             const last = r.lastGenerated ? new Date(r.lastGenerated) : null;
             if (!last || (today - last) >= 7 * 24 * 60 * 60 * 1000) shouldGenerate = true;
         }
-
-        if (shouldGenerate && r.lastGenerated !== todayKey) {
-            const exists = stato.oggi.some(t => t.recurringId === r.id && t.date === todayKey);
+        if (shouldGenerate && r.lastGenerated !== todayKeyVal) {
+            const exists = stato.oggi.some(t => t.recurringId === r.id && t.date === todayKeyVal);
             if (!exists) {
-                stato.oggi.push({ id: uid(), text: r.text, time: r.time, done: false, recurringId: r.id, date: todayKey });
-                r.lastGenerated = todayKey;
+                stato.oggi.push({ id: uid(), text: r.text, time: r.time, done: false, recurringId: r.id, date: todayKeyVal });
+                r.lastGenerated = todayKeyVal;
             }
         }
     });
@@ -256,11 +254,15 @@ function generaRecurringOggi() {
 function renderRecurring() {
     const lista = document.getElementById('lista-recurring');
     lista.innerHTML = '';
-    const freqLabels = { daily: '📅 Giornaliero', weekdays: '💼 Lun-Ven', weekend: '🏖️ Weekend', weekly: ' Settimanale' };
+    const freqLabels = { daily: '📅 Giornaliero', weekdays: '💼 Lun-Ven', weekend: '🏖️ Weekend', weekly: '📆 Settimanale' };
     stato.recurring.forEach(r => {
         const li = document.createElement('li');
         li.className = 'recurring';
-        li.innerHTML = `<span class="task-text">${r.text}</span>${r.time ? `<span class="task-time">⏰ ${r.time}</span>` : ''}<span class="task-freq">${freqLabels[r.freq]}</span><button class="btn-delete">️</button>`;
+        li.innerHTML = `
+            <span class="task-text">${r.text}</span>
+            ${r.time ? `<span class="task-time">⏰ ${r.time}</span>` : ''}
+            <span class="task-freq">${freqLabels[r.freq]}</span>
+            <button class="btn-delete">🗑️</button>`;
         li.querySelector('.btn-delete').addEventListener('click', () => {
             stato.recurring = stato.recurring.filter(x => x.id !== r.id);
             salva(); renderRecurring();
@@ -271,7 +273,6 @@ function renderRecurring() {
 
 // ============ TASK OGGI ============
 document.getElementById('data-oggi').textContent = oggiStr();
-
 document.getElementById('btn-add-oggi').addEventListener('click', () => {
     const text = document.getElementById('input-task-oggi').value.trim();
     const time = document.getElementById('input-time-oggi').value;
@@ -294,7 +295,11 @@ function renderOggi() {
         if (task.recurringId) li.classList.add('recurring');
         const cat = stato.categories.tb.find(c => c.id === task.category);
         const catHtml = cat ? `<span class="task-cat" style="background:${cat.color}">${cat.icon} ${cat.name}</span>` : '';
-        li.innerHTML = `<input type="checkbox" ${task.done ? 'checked' : ''}><span class="task-text">${task.text}</span>${catHtml}${task.time ? `<span class="task-time">⏰ ${task.time}</span>` : ''}<button class="btn-delete">🗑️</button>`;
+        li.innerHTML = `
+            <input type="checkbox" ${task.done ? 'checked' : ''}>
+            <span class="task-text">${task.text}</span>
+            ${catHtml}${task.time ? `<span class="task-time">⏰ ${task.time}</span>` : ''}
+            <button class="btn-delete">🗑️</button>`;
         li.querySelector('input').addEventListener('change', () => {
             task.done = !task.done;
             if (task.done) aggiornaStats();
@@ -397,7 +402,7 @@ function drawCategoriesChart() {
         const lx = cx + Math.cos(mid) * (r * 0.6);
         const ly = cy + Math.sin(mid) * (r * 0.6);
         ctx.fillStyle = 'white'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText(`${name} ${Math.round(val/total*100)}%`, lx, ly);
+        ctx.fillText(`${name} ${Math.round(val / total * 100)}%`, lx, ly);
         startAngle += angle;
     });
     ctx.font = '12px sans-serif'; ctx.textAlign = 'left';
@@ -455,7 +460,7 @@ function aiRispondi(domanda) {
             else risposta = `📋 Inizia da: <b>"${todo[0].text}"</b><br><br>💡 Fai il task più difficile quando hai più energia.`;
         }
     } else if (q.includes('analizz') || q.includes('produttività')) {
-        risposta = `📊 <b>Analisi:</b><br>✅ Task totali: <b>${total}</b><br> Streak: <b>${streak} giorni</b><br>📈 Media 7 giorni: <b>${avgLast7} task/giorno</b><br>🏆 Record: <b>${stato.stats.bestDay}</b><br><br>`;
+        risposta = `📊 <b>Analisi:</b><br>✅ Task totali: <b>${total}</b><br>🔥 Streak: <b>${streak} giorni</b><br>📈 Media 7 giorni: <b>${avgLast7} task/giorno</b><br>🏆 Record: <b>${stato.stats.bestDay}</b><br><br>`;
         if (streak >= 7) risposta += '🎉 <b>Wow!</b> Streak di ' + streak + ' giorni!';
         else if (streak >= 3) risposta += '💪 <b>Bene!</b> Stai costruendo una buona abitudine.';
         else if (total > 0) risposta += '🌱 <b>Ottimo inizio!</b> Punta a 7 giorni di streak.';
@@ -463,7 +468,7 @@ function aiRispondi(domanda) {
     } else if (q.includes('consiglio')) {
         const consigli = [
             '🎯 <b>Regola dei 2 minuti:</b> se un task richiede meno di 2 minuti, fallo subito.',
-            ' <b>Pomodoro:</b> 25 min focus + 5 min pausa. Dopo 4 cicli, pausa lunga.',
+            '⏱️ <b>Pomodoro:</b> 25 min focus + 5 min pausa. Dopo 4 cicli, pausa lunga.',
             '🐸 <b>Eat the Frog:</b> fai il task più difficile per primo.',
             '📝 <b>Regola 1-3-5:</b> ogni giorno: 1 task grande, 3 medi, 5 piccoli.',
             '📵 <b>Elimina distrazioni:</b> telefono in un\'altra stanza durante il focus.',
@@ -479,7 +484,7 @@ function aiRispondi(domanda) {
             '🎯 "La disciplina è il ponte tra obiettivi e risultati." - Jim Rohn',
             '💎 "I diamanti si formano sotto pressione. Anche tu!"'
         ];
-        risposta = frasi[Math.floor(Math.random() * frasi.length)] + `<br><br>Hai già completato <b>${total} task</b>. Immagina cosa puoi fare oggi! `;
+        risposta = frasi[Math.floor(Math.random() * frasi.length)] + `<br><br>Hai già completato <b>${total} task</b>. Immagina cosa puoi fare oggi!`;
     } else if (q.includes('pattern') || q.includes('abitudin')) {
         risposta = `🔍 <b>I tuoi pattern:</b><br>`;
         const habits = stato.habits;
@@ -487,7 +492,7 @@ function aiRispondi(domanda) {
             risposta += `📌 <b>${habits.length} abitudini</b> tracciate:<br>`;
             habits.forEach(h => { risposta += `• ${h.name}: 🔥 ${h.streak} giorni<br>`; });
         } else risposta += `📌 Nessuna abitudine tracciata.<br>`;
-        risposta += `<br> Media 7 giorni: <b>${avgLast7} task/giorno</b>`;
+        risposta += `<br>Media 7 giorni: <b>${avgLast7} task/giorno</b>`;
         if (avgLast7 >= 5) risposta += `<br><br>🎉 <b>Sei molto produttivo!</b>`;
         else if (avgLast7 >= 2) risposta += `<br><br>💪 <b>Buon ritmo!</b> Punta a 5 task/giorno.`;
         else risposta += `<br><br>🌱 <b>Puoi migliorare!</b> Inizia con 2-3 task al giorno.`;
@@ -549,7 +554,13 @@ function renderGTD() {
         document.getElementById('count-' + id).textContent = stato.gtd[id].length;
         stato.gtd[id].forEach(task => {
             const li = document.createElement('li');
-            li.innerHTML = `<span class="task-text">${task.text}</span><select class="ctx-select" style="padding:4px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:4px;"><option value="">Sposta...</option>${stato.categories.gtd.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('')}</select><button class="btn-delete">🗑️</button>`;
+            li.innerHTML = `
+                <span class="task-text">${task.text}</span>
+                <select class="ctx-select">
+                    <option value="">Sposta...</option>
+                    ${stato.categories.gtd.map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`).join('')}
+                </select>
+                <button class="btn-delete">🗑️</button>`;
             li.querySelector('.ctx-select').addEventListener('change', (e) => {
                 const newCtx = e.target.value;
                 if (newCtx && newCtx !== id) {
@@ -587,9 +598,19 @@ function renderEisenhower() {
         stato.eisenhower[q].forEach(task => {
             const li = document.createElement('li');
             if (task.done) li.classList.add('done');
-            li.innerHTML = `<input type="checkbox" ${task.done ? 'checked' : ''}><span class="task-text">${task.text}</span><button class="btn-delete">️</button>`;
-            li.querySelector('input').addEventListener('change', () => { task.done = !task.done; if (task.done) aggiornaStats(); salva(); renderEisenhower(); });
-            li.querySelector('.btn-delete').addEventListener('click', () => { stato.eisenhower[q] = stato.eisenhower[q].filter(t => t.id !== task.id); salva(); renderEisenhower(); });
+            li.innerHTML = `
+                <input type="checkbox" ${task.done ? 'checked' : ''}>
+                <span class="task-text">${task.text}</span>
+                <button class="btn-delete">🗑️</button>`;
+            li.querySelector('input').addEventListener('change', () => {
+                task.done = !task.done;
+                if (task.done) aggiornaStats();
+                salva(); renderEisenhower();
+            });
+            li.querySelector('.btn-delete').addEventListener('click', () => {
+                stato.eisenhower[q] = stato.eisenhower[q].filter(t => t.id !== task.id);
+                salva(); renderEisenhower();
+            });
             lista.appendChild(li);
         });
     });
@@ -620,7 +641,10 @@ function renderTimeblocks() {
         div.className = 'time-block';
         div.style.borderLeftColor = color;
         div.style.background = color + '20';
-        div.innerHTML = `<div class="time">${tb.start} - ${tb.end}</div><div class="attivita">${cat ? cat.icon + ' ' : ''}${tb.attivita}</div><button class="btn-delete">🗑️</button>`;
+        div.innerHTML = `
+            <div class="time">${tb.start} - ${tb.end}</div>
+            <div class="attivita">${cat ? cat.icon + ' ' : ''}${tb.attivita}</div>
+            <button class="btn-delete">🗑️</button>`;
         div.querySelector('.btn-delete').addEventListener('click', () => {
             stato.timeblocks = stato.timeblocks.filter(t => t.id !== tb.id);
             salva(); renderTimeblocks();
@@ -653,27 +677,40 @@ function renderOKR() {
         const done = okr.keyResults.filter(kr => kr.done).length;
         const total = okr.keyResults.length;
         const pct = total ? (done / total) * 100 : 0;
-        card.innerHTML = `<h3>${okr.titolo}</h3><div class="progress-bar"><div class="progress" style="width:${pct}%"></div></div><p style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">${done}/${total} Key Results</p>${okr.keyResults.map((kr, i) => `<div class="kr-item"><input type="checkbox" ${kr.done ? 'checked' : ''}><span>${kr.text}</span></div>`).join('')}<button class="btn-delete" style="margin-top:10px;">🗑️ Elimina</button>`;
-        card.querySelectorAll('.kr-item input').forEach((cb, i) => { cb.addEventListener('change', () => { okr.keyResults[i].done = cb.checked; salva(); renderOKR(); }); });
-        card.querySelector('.btn-delete').addEventListener('click', () => { stato.okr = stato.okr.filter(o => o.id !== okr.id); salva(); renderOKR(); });
+        card.innerHTML = `
+            <h3>${okr.titolo}</h3>
+            <div class="progress-bar"><div class="progress" style="width:${pct}%"></div></div>
+            <p style="color:var(--text-dim);font-size:12px;margin-bottom:12px;">${done}/${total} Key Results</p>
+            ${okr.keyResults.map((kr, i) => `<div class="kr-item"><input type="checkbox" ${kr.done ? 'checked' : ''}><span>${kr.text}</span></div>`).join('')}
+            <button class="btn-delete" style="margin-top:10px;">🗑️ Elimina</button>`;
+        card.querySelectorAll('.kr-item input').forEach((cb, i) => {
+            cb.addEventListener('change', () => { okr.keyResults[i].done = cb.checked; salva(); renderOKR(); });
+        });
+        card.querySelector('.btn-delete').addEventListener('click', () => {
+            stato.okr = stato.okr.filter(o => o.id !== okr.id);
+            salva(); renderOKR();
+        });
         lista.appendChild(card);
     });
 }
 
 // ============ 12 WEEK ============
 function init12Week() { if (!stato.week12Start) { stato.week12Start = new Date().toISOString(); salva(); } }
+
 function calcolaSettimana() {
     const start = new Date(stato.week12Start);
     const now = new Date();
     const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24));
     return { week: Math.min(12, Math.floor(diffDays / 7) + 1), pct: Math.min(100, (diffDays / 84) * 100), start };
 }
+
 document.getElementById('btn-add-12w').addEventListener('click', () => {
     const text = prompt('Obiettivo per le prossime 12 settimane:');
     if (!text) return;
     stato.week12.push({ id: uid(), text, done: false });
     salva(); render12W();
 });
+
 function render12W() {
     const { week, pct, start } = calcolaSettimana();
     document.getElementById('week-current').textContent = week;
@@ -686,26 +723,381 @@ function render12W() {
     stato.week12.forEach(task => {
         const li = document.createElement('li');
         if (task.done) li.classList.add('done');
-        li.innerHTML = `<input type="checkbox" ${task.done ? 'checked' : ''}><span class="task-text">${task.text}</span><button class="btn-delete">🗑️</button>`;
-        li.querySelector('input').addEventListener('change', () => { task.done = !task.done; if (task.done) aggiornaStats(); salva(); render12W(); });
-        li.querySelector('.btn-delete').addEventListener('click', () => { stato.week12 = stato.week12.filter(t => t.id !== task.id); salva(); render12W(); });
+        li.innerHTML = `
+            <input type="checkbox" ${task.done ? 'checked' : ''}>
+            <span class="task-text">${task.text}</span>
+            <button class="btn-delete">🗑️</button>`;
+        li.querySelector('input').addEventListener('change', () => {
+            task.done = !task.done;
+            if (task.done) aggiornaStats();
+            salva(); render12W();
+        });
+        li.querySelector('.btn-delete').addEventListener('click', () => {
+            stato.week12 = stato.week12.filter(t => t.id !== task.id);
+            salva(); render12W();
+        });
         lista.appendChild(li);
     });
 }
 
-// ============ SETTINGS / CONTROLLO DATI ============
+// ============ CALENDARIO & EVENTI ============
+let calendarDate = new Date();
+
+function detectOS() {
+    const ua = navigator.userAgent.toLowerCase();
+    if (ua.includes('win')) return 'windows';
+    if (ua.includes('mac')) return 'macos';
+    return 'linux';
+}
+
+function renderCalendar() {
+    const grid = document.getElementById('calendar-grid');
+    const title = document.getElementById('calendar-title');
+    if (!grid || !title) return;
+
+    const year = calendarDate.getFullYear();
+    const month = calendarDate.getMonth();
+    const monthName = calendarDate.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+    title.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+
+    // Rimuovi solo le celle, mantieni i day-name
+    grid.querySelectorAll('.calendar-cell').forEach(c => c.remove());
+
+    const firstDay = new Date(year, month, 1);
+    let startWeekday = firstDay.getDay();
+    startWeekday = startWeekday === 0 ? 6 : startWeekday - 1;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayKeyVal = oggiKey();
+
+    for (let i = 0; i < startWeekday; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'calendar-cell empty';
+        grid.appendChild(empty);
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const dayEvents = stato.events.filter(e => e.date === dateKey);
+        const cell = document.createElement('div');
+        cell.className = 'calendar-cell' + (dateKey === todayKeyVal ? ' today' : '') + (dayEvents.length ? ' has-events' : '');
+        cell.innerHTML = `
+            <div class="cell-day">${d}</div>
+            ${dayEvents.slice(0, 3).map(e => `
+                <div class="cell-event" style="background:${e.color || '#6366f1'}" title="${e.time || ''} ${e.title}">
+                    ${e.time ? e.time + ' ' : ''}${e.title}
+                </div>
+            `).join('')}
+            ${dayEvents.length > 3 ? `<div class="cell-more">+${dayEvents.length - 3} altri</div>` : ''}
+        `;
+        cell.addEventListener('click', () => {
+            document.getElementById('input-event-date').value = dateKey;
+            document.getElementById('modal-event').classList.add('active');
+        });
+        grid.appendChild(cell);
+    }
+
+    renderUpcomingEvents();
+}
+
+function renderUpcomingEvents() {
+    const lista = document.getElementById('upcoming-events');
+    if (!lista) return;
+    lista.innerHTML = '';
+    const now = new Date();
+    const todayStr = now.toDateString();
+    const upcoming = stato.events
+        .filter(e => new Date(e.date + 'T' + (e.time || '23:59')) >= new Date(todayStr))
+        .sort((a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || '')))
+        .slice(0, 10);
+
+    if (upcoming.length === 0) {
+        lista.innerHTML = '<p style="color:var(--text-dim);text-align:center;padding:20px;">Nessun evento programmato</p>';
+        return;
+    }
+
+    upcoming.forEach(e => {
+        const evDate = new Date(e.date + 'T' + (e.time || '00:00'));
+        const diffMs = evDate - new Date(todayStr);
+        const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        let when = evDate.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+        if (e.time) when += ' ⏰ ' + e.time;
+        if (diffDays === 0) when += ' (OGGI)';
+        else if (diffDays === 1) when += ' (domani)';
+        else if (diffDays > 1 && diffDays <= 7) when += ` (tra ${diffDays} giorni)`;
+
+        const li = document.createElement('div');
+        li.className = 'upcoming-event';
+        li.style.borderLeftColor = e.color || '#6366f1';
+        li.innerHTML = `
+            <div style="flex:1;">
+                <div style="font-weight:600;">${e.title}</div>
+                <div style="font-size:12px;color:var(--text-dim);">${when}</div>
+                ${e.description ? `<div style="font-size:12px;margin-top:4px;">${e.description}</div>` : ''}
+            </div>
+            <button class="btn-delete">🗑️</button>
+        `;
+        li.querySelector('.btn-delete').addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            if (confirm(`Eliminare l'evento "${e.title}"?`)) {
+                stato.events = stato.events.filter(x => x.id !== e.id);
+                salva();
+                renderCalendar();
+            }
+        });
+        lista.appendChild(li);
+    });
+}
+
+document.getElementById('btn-cal-prev').addEventListener('click', () => {
+    calendarDate.setMonth(calendarDate.getMonth() - 1);
+    renderCalendar();
+});
+document.getElementById('btn-cal-next').addEventListener('click', () => {
+    calendarDate.setMonth(calendarDate.getMonth() + 1);
+    renderCalendar();
+});
+document.getElementById('btn-cal-today').addEventListener('click', () => {
+    calendarDate = new Date();
+    renderCalendar();
+});
+
+document.getElementById('btn-add-event').addEventListener('click', () => {
+    document.getElementById('input-event-date').value = oggiKey();
+    document.getElementById('modal-event').classList.add('active');
+});
+document.getElementById('btn-cancel-event').addEventListener('click', () => {
+    document.getElementById('modal-event').classList.remove('active');
+});
+document.getElementById('btn-save-event').addEventListener('click', () => {
+    const title = document.getElementById('input-event-title').value.trim();
+    const date = document.getElementById('input-event-date').value;
+    const time = document.getElementById('input-event-time').value;
+    const duration = document.getElementById('input-event-duration').value || 60;
+    const description = document.getElementById('input-event-desc').value.trim();
+    const color = document.getElementById('input-event-color').value;
+    const notifyBefore = document.getElementById('input-event-notify').value || 0;
+
+    if (!title || !date) {
+        alert('⚠️ Titolo e data sono obbligatori');
+        return;
+    }
+
+    stato.events.push({
+        id: uid(), title, date, time, duration: parseInt(duration),
+        description, color, notifyBefore: parseInt(notifyBefore),
+        created: new Date().toISOString()
+    });
+
+    ['input-event-title', 'input-event-time', 'input-event-desc'].forEach(id => {
+        document.getElementById(id).value = '';
+    });
+    document.getElementById('input-event-duration').value = 60;
+    document.getElementById('input-event-notify').value = 15;
+
+    document.getElementById('modal-event').classList.remove('active');
+    salva();
+    renderCalendar();
+
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('📅 Evento creato', {
+            body: `${title}${time ? ' alle ' + time : ''} il ${new Date(date).toLocaleDateString('it-IT')}`
+        });
+    }
+});
+
+function initCalendarSettings() {
+    const osSelect = document.getElementById('select-notif-os');
+    const advanceInput = document.getElementById('input-notif-advance');
+    const osLabel = document.getElementById('detected-os');
+    if (osSelect) {
+        const detected = detectOS();
+        osSelect.value = stato.calendarNotif.os || detected;
+        if (osLabel) {
+            const labels = { linux: '🐧 Linux', macos: '🍎 macOS', windows: '🪟 Windows' };
+            osLabel.textContent = labels[detected] + ' (rilevato)';
+        }
+        osSelect.onchange = () => {
+            stato.calendarNotif.os = osSelect.value;
+            salva();
+        };
+    }
+    if (advanceInput) {
+        advanceInput.value = stato.calendarNotif.advanceMin || 15;
+        advanceInput.onchange = () => {
+            stato.calendarNotif.advanceMin = parseInt(advanceInput.value) || 15;
+            salva();
+        };
+    }
+}
+
+function generaScriptNotifiche() {
+    const os = stato.calendarNotif.os || detectOS();
+    const events = stato.events.filter(e => e.time);
+    const advance = stato.calendarNotif.advanceMin || 15;
+    let script = '', filename = '';
+
+    if (os === 'linux') {
+        filename = 'notifiche-lifeplanner.sh';
+        script = `#!/bin/bash
+# 🔔 Life Planner - Script notifiche Linux
+# Generato: ${new Date().toLocaleString('it-IT')}
+# Crontab: */5 * * * * /percorso/a/notifiche-lifeplanner.sh
+
+DATA_DIR="$HOME/.lifeplanner"
+mkdir -p "$DATA_DIR"
+SENT_FILE="$DATA_DIR/.sent_events"
+touch "$SENT_FILE"
+
+NOW=$(date +%s)
+
+${events.map(e => {
+            const safeTitle = e.title.replace(/"/g, '\\"').replace(/`/g, '');
+            return `# Evento: ${safeTitle}
+EVENT_TS=$(date -d "${e.date} ${e.time}" +%s 2>/dev/null)
+if [ -n "$EVENT_TS" ]; then
+    DIFF=$(( (EVENT_TS - NOW) / 60 ))
+    if [ "$DIFF" -le ${advance} ] && [ "$DIFF" -ge 0 ]; then
+        KEY="${e.date}_${e.time}"
+        if ! grep -q "^$KEY$" "$SENT_FILE"; then
+            notify-send "📅 Life Planner" "${safeTitle} tra $DIFF minuti" -u critical -i appointment-soon
+            echo "$KEY" >> "$SENT_FILE"
+        fi
+    fi
+fi`;
+        }).join('\n\n')}
+
+# Pulizia vecchi record (>1 giorno)
+find "$SENT_FILE" -mtime +1 -delete 2>/dev/null
+echo "✅ Controllo completato: $(date)"
+`;
+    } else if (os === 'macos') {
+        filename = 'notifiche-lifeplanner.sh';
+        script = `#!/bin/bash
+# 🔔 Life Planner - Script notifiche macOS
+# Generato: ${new Date().toLocaleString('it-IT')}
+
+DATA_DIR="$HOME/.lifeplanner"
+mkdir -p "$DATA_DIR"
+SENT_FILE="$DATA_DIR/.sent_events"
+touch "$SENT_FILE"
+
+NOW=$(date +%s)
+
+${events.map(e => {
+            const safeTitle = e.title.replace(/"/g, '\\"').replace(/`/g, '');
+            return `EVENT_TS=$(date -j -f "%Y-%m-%d %H:%M" "${e.date} ${e.time}" +%s 2>/dev/null)
+if [ -n "$EVENT_TS" ]; then
+    DIFF=$(( (EVENT_TS - NOW) / 60 ))
+    if [ "$DIFF" -le ${advance} ] && [ "$DIFF" -ge 0 ]; then
+        KEY="${e.date}_${e.time}"
+        if ! grep -q "^$KEY$" "$SENT_FILE"; then
+            osascript -e 'display notification "${safeTitle} tra '"$DIFF"' minuti" with title "📅 Life Planner" sound name "Glass"'
+            echo "$KEY" >> "$SENT_FILE"
+        fi
+    fi
+fi`;
+        }).join('\n\n')}
+
+echo "✅ Controllo completato: $(date)"
+`;
+    } else {
+        filename = 'notifiche-lifeplanner.ps1';
+        script = `# 🔔 Life Planner - Script notifiche Windows PowerShell
+# Generato: ${new Date().toLocaleString('it-IT')}
+# Esegui: powershell -ExecutionPolicy Bypass -File notifiche-lifeplanner.ps1
+
+$DataDir = "$env:USERPROFILE\\.lifeplanner"
+New-Item -ItemType Directory -Force -Path $DataDir | Out-Null
+$SentFile = "$DataDir\\.sent_events.txt"
+if (!(Test-Path $SentFile)) { New-Item $SentFile -ItemType File | Out-Null }
+$sent = Get-Content $SentFile -ErrorAction SilentlyContinue
+$now = Get-Date
+$advance = ${advance}
+
+function Send-Notif($title, $msg) {
+    Add-Type -AssemblyName System.Windows.Forms
+    $n = New-Object System.Windows.Forms.NotifyIcon
+    $n.Icon = [System.Drawing.SystemIcons]::Information
+    $n.Visible = $true
+    $n.BalloonTipTitle = $title
+    $n.BalloonTipText = $msg
+    $n.ShowBalloonTip(5000)
+    Start-Sleep -Milliseconds 100
+    $n.Dispose()
+}
+
+${events.map(e => {
+            const safeTitle = e.title.replace(/"/g, '`"');
+            return `$evDate = [DateTime]::Parse("${e.date} ${e.time}")
+$diff = [math]::Floor(($evDate - $now).TotalMinutes)
+$key = "${e.date}_${e.time}"
+if ($diff -le $advance -and $diff -ge 0 -and $sent -notcontains $key) {
+    Send-Notif "📅 Life Planner" "${safeTitle} tra $diff minuti"
+    Add-Content $SentFile $key
+}`;
+        }).join('\n\n')}
+
+Write-Host "✅ Controllo completato: $(Get-Date)"
+`;
+    }
+
+    return { script, filename };
+}
+
+function downloadScriptNotifiche() {
+    const { script, filename } = generaScriptNotifiche();
+    const blob = new Blob([script], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    const os = stato.calendarNotif.os || detectOS();
+    let istruzioni = '✅ Script scaricato!\n\n';
+    if (os === 'linux' || os === 'macos') {
+        istruzioni += `📋 Per renderlo eseguibile:\nchmod +x ${filename}\n\n`;
+        istruzioni += `📋 Per eseguirlo ogni 5 minuti (crontab):\ncrontab -e\n`;
+        istruzioni += `Aggiungi: */5 * * * * /percorso/a/${filename}\n`;
+    } else {
+        istruzioni += `📋 Per eseguirlo con Task Scheduler di Windows:\n`;
+        istruzioni += `1. Apri "Utilità di pianificazione"\n`;
+        istruzioni += `2. Crea attività base → avvia ${filename} ogni 5 minuti\n`;
+    }
+    alert(istruzioni);
+}
+
+function copyCrontabCommand() {
+    const os = stato.calendarNotif.os || detectOS();
+    let cmd = '';
+    if (os === 'linux' || os === 'macos') {
+        cmd = `*/5 * * * * $HOME/notifiche-lifeplanner.sh >> $HOME/.lifeplanner/cron.log 2>&1`;
+    } else {
+        cmd = `powershell -ExecutionPolicy Bypass -File "$env:USERPROFILE\\notifiche-lifeplanner.ps1"`;
+    }
+    navigator.clipboard.writeText(cmd).then(() => {
+        alert('✅ Comando copiato negli appunti!\n\n' + cmd);
+    }).catch(() => {
+        prompt('Copia questo comando:', cmd);
+    });
+}
+
+document.getElementById('btn-download-notif-script').addEventListener('click', downloadScriptNotifiche);
+document.getElementById('btn-copy-crontab').addEventListener('click', copyCrontabCommand);
+
+// ============ SETTINGS ============
 function renderSettings() {
-    // Info dati
     const json = JSON.stringify(stato);
     const sizeKB = (new Blob([json]).size / 1024).toFixed(2);
     document.getElementById('data-size').textContent = sizeKB + ' KB';
     document.getElementById('data-created').textContent = new Date(stato.meta.created).toLocaleDateString('it-IT');
     document.getElementById('data-last-backup').textContent = stato.meta.lastBackup ? new Date(stato.meta.lastBackup).toLocaleString('it-IT') : 'Mai';
-    
-    let totalTasks = stato.oggi.length + Object.values(stato.gtd).reduce((s, a) => s + a.length, 0) + Object.values(stato.eisenhower).reduce((s, a) => s + a.length, 0) + stato.timeblocks.length + stato.week12.length;
+    let totalTasks = stato.oggi.length + Object.values(stato.gtd).reduce((s, a) => s + a.length, 0) +
+        Object.values(stato.eisenhower).reduce((s, a) => s + a.length, 0) +
+        stato.timeblocks.length + stato.week12.length + stato.events.length;
     document.getElementById('data-tasks-count').textContent = totalTasks;
 
-    // Notifiche
     const notifStatus = document.getElementById('notif-status');
     if ('Notification' in window) {
         if (Notification.permission === 'granted') {
@@ -719,11 +1111,9 @@ function renderSettings() {
     } else {
         notifStatus.textContent = '❌ Non supportate';
     }
-
     renderCatChips();
 }
 
-// Export JSON
 document.getElementById('btn-export-json').addEventListener('click', () => {
     const data = JSON.stringify(stato, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
@@ -738,7 +1128,10 @@ document.getElementById('btn-export-json').addEventListener('click', () => {
     alert('✅ Backup completato! Dimensione: ' + (new Blob([data]).size / 1024).toFixed(2) + ' KB');
 });
 
-// Export Markdown
+document.getElementById('btn-export-quick').addEventListener('click', () => {
+    document.getElementById('btn-export-json').click();
+});
+
 document.getElementById('btn-export-md').addEventListener('click', () => {
     let md = `# Life Planner - Backup ${oggiKey()}\n\n`;
     md += `## 📅 Task di oggi\n\n`;
@@ -751,8 +1144,8 @@ document.getElementById('btn-export-md').addEventListener('click', () => {
         }
     });
     md += `\n## ⚡ Eisenhower\n\n`;
-    [1,2,3,4].forEach(q => {
-        const labels = {1: '🔥 FAI ORA', 2: '📅 PIANIFICA', 3: '👥 DELEGA', 4: '🗑️ ELIMINA'};
+    [1, 2, 3, 4].forEach(q => {
+        const labels = { 1: '🔥 FAI ORA', 2: '📅 PIANIFICA', 3: '👥 DELEGA', 4: '🗑️ ELIMINA' };
         md += `### ${labels[q]}\n\n`;
         stato.eisenhower[q].forEach(t => { md += `- [${t.done ? 'x' : ' '}] ${t.text}\n`; });
     });
@@ -765,7 +1158,11 @@ document.getElementById('btn-export-md').addEventListener('click', () => {
     stato.week12.forEach(t => { md += `- [${t.done ? 'x' : ' '}] ${t.text}\n`; });
     md += `\n## 🔁 Abitudini\n\n`;
     stato.habits.forEach(h => { md += `- ${h.name} (🔥 ${h.streak} giorni)\n`; });
-    
+    md += `\n## 📆 Eventi\n\n`;
+    stato.events.forEach(e => {
+        md += `- **${e.title}** - ${e.date}${e.time ? ' ' + e.time : ''}\n`;
+        if (e.description) md += `  ${e.description}\n`;
+    });
     const blob = new Blob([md], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -776,7 +1173,6 @@ document.getElementById('btn-export-md').addEventListener('click', () => {
     alert('✅ Export Markdown completato!');
 });
 
-// Export CSV
 document.getElementById('btn-export-csv').addEventListener('click', () => {
     let csv = 'Tipo;Testo;Completato;Data/Ora;Categoria\n';
     stato.oggi.forEach(t => {
@@ -788,8 +1184,8 @@ document.getElementById('btn-export-csv').addEventListener('click', () => {
             csv += `GTD-${ctx.name};"${t.text}";No;;\n`;
         });
     });
-    [1,2,3,4].forEach(q => {
-        const labels = {1: 'Q1-Fai ora', 2: 'Q2-Pianifica', 3: 'Q3-Delega', 4: 'Q4-Elimina'};
+    [1, 2, 3, 4].forEach(q => {
+        const labels = { 1: 'Q1-Fai ora', 2: 'Q2-Pianifica', 3: 'Q3-Delega', 4: 'Q4-Elimina' };
         stato.eisenhower[q].forEach(t => {
             csv += `${labels[q]};"${t.text}";${t.done ? 'Sì' : 'No'};;\n`;
         });
@@ -797,7 +1193,9 @@ document.getElementById('btn-export-csv').addEventListener('click', () => {
     stato.habits.forEach(h => {
         csv += `Abitudine;"${h.name}";No;;Streak: ${h.streak}\n`;
     });
-    
+    stato.events.forEach(e => {
+        csv += `Evento;"${e.title}";No;${e.date} ${e.time || ''};\n`;
+    });
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -808,7 +1206,6 @@ document.getElementById('btn-export-csv').addEventListener('click', () => {
     alert('✅ Export CSV completato! Apribile con Excel/Google Sheets.');
 });
 
-// Auto backup (salva copia locale)
 document.getElementById('btn-auto-backup').addEventListener('click', () => {
     const data = JSON.stringify(stato);
     localStorage.setItem('lifePlanner_autoBackup', data);
@@ -819,7 +1216,6 @@ document.getElementById('btn-auto-backup').addEventListener('click', () => {
     renderSettings();
 });
 
-// Import
 document.getElementById('btn-import-json').addEventListener('click', () => { document.getElementById('file-import2').click(); });
 document.getElementById('file-import2').addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -837,19 +1233,17 @@ document.getElementById('file-import2').addEventListener('change', (e) => {
     reader.readAsText(file);
 });
 
-// Clear today
 document.getElementById('btn-clear-today').addEventListener('click', () => {
     if (confirm('⚠️ Cancellare tutti i task di oggi?')) {
-        const todayKey = oggiKey();
-        stato.oggi = stato.oggi.filter(t => t.date !== todayKey);
+        const todayKeyVal = oggiKey();
+        stato.oggi = stato.oggi.filter(t => t.date !== todayKeyVal);
         salva(); renderOggi();
         alert('✅ Task di oggi cancellati.');
     }
 });
 
-// Clear all
 document.getElementById('btn-clear-all').addEventListener('click', () => {
-    if (confirm('⚠️️ CANCELLARE TUTTI I DATI? Questa azione è irreversibile!')) {
+    if (confirm('⚠️ CANCELLARE TUTTI I DATI? Questa azione è irreversibile!')) {
         if (confirm('Sei davvero sicuro? Perdi tutto!')) {
             localStorage.removeItem('lifePlanner');
             location.reload();
@@ -857,9 +1251,8 @@ document.getElementById('btn-clear-all').addEventListener('click', () => {
     }
 });
 
-// Reset app
 document.getElementById('btn-reset-app').addEventListener('click', () => {
-    if (confirm(' Reset completo dell\'app? Tutti i dati saranno persi.')) {
+    if (confirm('⚠️ Reset completo dell\'app? Tutti i dati saranno persi.')) {
         if (confirm('Ultima conferma: procedere?')) {
             localStorage.clear();
             location.reload();
@@ -867,7 +1260,6 @@ document.getElementById('btn-reset-app').addEventListener('click', () => {
     }
 });
 
-// Notifiche
 document.getElementById('btn-enable-notif').addEventListener('click', () => {
     if (!('Notification' in window)) {
         alert('❌ Il tuo browser non supporta le notifiche.');
@@ -900,4 +1292,6 @@ init12Week();
 generaRecurringOggi();
 renderAll();
 
-if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => { });
+}

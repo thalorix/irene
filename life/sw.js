@@ -1,1 +1,0 @@
-const C='life-planner-v1';const U=['/','/index.html','/style.css','/app.js','/manifest.json'];self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(U)));});self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});
