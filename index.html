@@ -303,6 +303,11 @@
             color: white
         }
 
+        .btn-warning {
+            background: var(--warning);
+            color: white
+        }
+
         input,
         select,
         textarea {
@@ -372,6 +377,20 @@
 
         .btn-delete:hover {
             background: rgba(239, 68, 68, 0.1);
+            border-radius: 4px
+        }
+
+        .btn-edit {
+            background: transparent;
+            border: none;
+            color: var(--warning);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px 8px
+        }
+
+        .btn-edit:hover {
+            background: rgba(245, 158, 11, 0.1);
             border-radius: 4px
         }
 
@@ -755,7 +774,8 @@
             display: flex;
             gap: 10px;
             justify-content: flex-end;
-            margin-top: 20px
+            margin-top: 20px;
+            flex-wrap: wrap
         }
 
         .form-group {
@@ -902,7 +922,13 @@
             margin-bottom: 2px;
             white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis
+            text-overflow: ellipsis;
+            cursor: pointer
+        }
+
+        .cell-event:hover {
+            opacity: 0.8;
+            transform: scale(1.02)
         }
 
         .cell-more {
@@ -927,6 +953,12 @@
             display: flex;
             align-items: center;
             gap: 10px
+        }
+
+        .upcoming-event-actions {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0
         }
 
         .notif-settings {
@@ -1102,7 +1134,7 @@
     <div class="tabs">
         <div class="tab active" data-view="oggi">📅 Oggi</div>
         <div class="tab" data-view="okr">🎯 OKR</div>
-        <div class="tab" data-view="gtd"> GTD</div>
+        <div class="tab" data-view="gtd">📥 GTD</div>
         <div class="tab" data-view="eisen">⚡ Eisen</div>
         <div class="tab" data-view="time">🕐 Time</div>
         <div class="tab" data-view="12w">🔥 12W</div>
@@ -1137,7 +1169,7 @@
                         <select id="select-recurring-freq">
                             <option value="daily">📅 Ogni giorno</option>
                             <option value="weekdays">💼 Lun-Ven</option>
-                            <option value="weekend">️ Weekend</option>
+                            <option value="weekend">🏖️ Weekend</option>
                             <option value="weekly">📆 Settimanale</option>
                         </select>
                         <button class="btn btn-primary" id="btn-add-recurring">+</button>
@@ -1153,7 +1185,7 @@
                 </div>
                 <ul class="task-list" id="lista-oggi"></ul>
                 <div style="margin-top:15px;">
-                    <h3> Statistiche oggi</h3>
+                    <h3>📊 Statistiche oggi</h3>
                     <div class="progress-bar">
                         <div class="progress" id="progress-oggi"></div>
                     </div>
@@ -1189,7 +1221,7 @@
                 <p style="color:var(--text-dim);margin-bottom:15px;">Urgente × Importante</p>
                 <div class="eisenhower-grid">
                     <div class="quadrant q1">
-                        <h3> FAI ORA</h3>
+                        <h3>🔥 FAI ORA</h3>
                         <p style="font-size:11px;color:var(--text-dim);">Urgente + Importante</p>
                         <ul class="task-list" id="lista-q1"></ul>
                         <div class="add-mini"><input placeholder="Task..."><button class="btn btn-primary"
@@ -1222,7 +1254,7 @@
 
         <div class="view" id="view-time">
             <div class="card">
-                <h2> Time Blocking</h2>
+                <h2>🕐 Time Blocking</h2>
                 <p style="color:var(--text-dim);margin-bottom:15px;">Pianifica la tua giornata a blocchi</p>
                 <div
                     style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:15px;">
@@ -1268,7 +1300,7 @@
                     </div>
                     <div class="stat-card">
                         <div class="stat-value" id="stat-today">0%</div>
-                        <div class="stat-label"> Produttività oggi</div>
+                        <div class="stat-label">📈 Produttività oggi</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-value" id="stat-best">0</div>
@@ -1288,7 +1320,7 @@
 
         <div class="view" id="view-ai">
             <div class="card">
-                <h2> AI Assistant</h2>
+                <h2>🤖 AI Assistant</h2>
                 <p style="color:var(--text-dim);margin-bottom:15px;">Il tuo coach di produttività</p>
                 <div class="ai-chat" id="ai-chat">
                     <div class="ai-message">
@@ -1335,9 +1367,9 @@
                     <p style="color:var(--text-dim);font-size:13px;">Ricevi notifiche native dal tuo sistema operativo
                         quando si avvicinano gli eventi.</p>
                     <div class="notif-row">
-                        <label>️ Sistema operativo:</label>
+                        <label>🖥️ Sistema operativo:</label>
                         <select id="select-notif-os">
-                            <option value="linux"> Linux</option>
+                            <option value="linux">🐧 Linux</option>
                             <option value="macos">🍎 macOS</option>
                             <option value="windows">🪟 Windows</option>
                         </select>
@@ -1369,7 +1401,7 @@
                 <p style="color:var(--text-dim);">I tuoi dati sono tuoi. Sempre.</p>
 
                 <div class="card" style="background:var(--bg);margin-top:15px;">
-                    <h3> Sicurezza & Accesso</h3>
+                    <h3>🔒 Sicurezza & Accesso</h3>
                     <p style="color:var(--text-dim);font-size:13px;margin-bottom:15px;">Gestisci le tue credenziali e le
                         impostazioni di sessione.</p>
                     <div class="setting-row">
@@ -1406,7 +1438,7 @@
                     <p style="color:var(--text-dim);font-size:13px;">I tuoi dati restano nel tuo browser. Nessun server,
                         nessun cloud, nessun tracciamento.</p>
                     <div class="grid-2" style="margin-top:15px;">
-                        <div> Dimensione dati: <b id="data-size">-</b></div>
+                        <div>📊 Dimensione dati: <b id="data-size">-</b></div>
                         <div>📅 Creato il: <b id="data-created">-</b></div>
                         <div>🔄 Ultimo backup: <b id="data-last-backup">-</b></div>
                         <div>📝 Task totali: <b id="data-tasks-count">-</b></div>
@@ -1448,7 +1480,7 @@
                 </div>
 
                 <div class="card" style="background:var(--bg);margin-top:15px;">
-                    <h3> Import & Ripristino</h3>
+                    <h3>📥 Import & Ripristino</h3>
                     <p style="color:var(--text-dim);font-size:13px;margin-bottom:10px;">Importa dati da un backup
                         precedente.</p>
                     <input type="file" id="file-import2" accept=".json" style="display:none;">
@@ -1460,7 +1492,7 @@
                     <p style="color:var(--text-dim);font-size:13px;margin-bottom:10px;">Azioni irreversibili. Procedi
                         con cautela.</p>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                        <button class="btn btn-danger" id="btn-clear-today">️ Cancella task di oggi</button>
+                        <button class="btn btn-danger" id="btn-clear-today">🗑️ Cancella task di oggi</button>
                         <button class="btn btn-danger" id="btn-clear-all">Cancella TUTTI i dati</button>
                         <button class="btn btn-danger" id="btn-reset-app">🔄 Reset completo app</button>
                     </div>
@@ -1498,7 +1530,7 @@
 
     <div class="modal" id="modal-event">
         <div class="modal-content">
-            <h2> Nuovo Evento</h2>
+            <h2 id="modal-event-title">📅 Nuovo Evento</h2>
             <div class="form-group"><label>Titolo evento</label><input type="text" id="input-event-title"
                     placeholder="Es: Riunione team"></div>
             <div class="form-row">
@@ -1513,9 +1545,10 @@
                 <div class="color-picker-row"><input type="color" id="input-event-color" value="#6366f1"><span
                         style="font-size:12px;color:var(--text-dim);">Scegli un colore per l'evento</span></div>
             </div>
-            <div class="form-group"><label> Notifica prima (minuti)</label><input type="number" id="input-event-notify"
-                    value="15" min="0" max="1440"></div>
+            <div class="form-group"><label>🔔 Notifica prima (minuti)</label><input type="number"
+                    id="input-event-notify" value="15" min="0" max="1440"></div>
             <div class="modal-actions">
+                <button class="btn btn-danger" id="btn-delete-event" style="display:none;">🗑️ Elimina</button>
                 <button class="btn btn-secondary" id="btn-cancel-event">Annulla</button>
                 <button class="btn btn-primary" id="btn-save-event">Salva</button>
             </div>

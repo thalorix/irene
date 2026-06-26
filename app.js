@@ -27,11 +27,11 @@ var stato = {
             { id: 'casa', name: 'Casa', icon: '🏠', color: '#10b981' },
             { id: 'lavoro', name: 'Lavoro', icon: '💼', color: '#f59e0b' },
             { id: 'pc', name: 'PC', icon: '💻', color: '#8b5cf6' },
-            { id: 'fuori', name: 'Fuori', icon: '', color: '#ec4899' }
+            { id: 'fuori', name: 'Fuori', icon: '🚶', color: '#ec4899' }
         ],
         tb: [
             { id: 'lavoro', name: 'Lavoro', icon: '💼', color: '#6366f1' },
-            { id: 'studio', name: 'Studio', icon: '', color: '#10b981' },
+            { id: 'studio', name: 'Studio', icon: '📚', color: '#10b981' },
             { id: 'sport', name: 'Sport', icon: '🏃', color: '#f59e0b' },
             { id: 'personale', name: 'Personale', icon: '🏠', color: '#ec4899' },
             { id: 'riposo', name: 'Riposo', icon: '😴', color: '#94a3b8' }
@@ -53,6 +53,9 @@ var sessione = {
     lastActivity: Date.now(),
     timeoutId: null
 };
+
+// ID dell'evento attualmente in modifica (null = creazione nuovo)
+var editingEventId = null;
 
 function salva() {
     localStorage.setItem('lifePlanner', JSON.stringify(stato));
@@ -80,17 +83,17 @@ function carica() {
         if (!stato.categories) {
             stato.categories = {
                 gtd: [
-                    { id: 'inbox', name: 'Inbox', icon: '', color: '#6366f1' },
+                    { id: 'inbox', name: 'Inbox', icon: '📥', color: '#6366f1' },
                     { id: 'casa', name: 'Casa', icon: '🏠', color: '#10b981' },
                     { id: 'lavoro', name: 'Lavoro', icon: '💼', color: '#f59e0b' },
-                    { id: 'pc', name: 'PC', icon: '', color: '#8b5cf6' },
+                    { id: 'pc', name: 'PC', icon: '💻', color: '#8b5cf6' },
                     { id: 'fuori', name: 'Fuori', icon: '🚶', color: '#ec4899' }
                 ],
                 tb: [
                     { id: 'lavoro', name: 'Lavoro', icon: '💼', color: '#6366f1' },
                     { id: 'studio', name: 'Studio', icon: '📚', color: '#10b981' },
                     { id: 'sport', name: 'Sport', icon: '🏃', color: '#f59e0b' },
-                    { id: 'personale', name: 'Personale', icon: '', color: '#ec4899' },
+                    { id: 'personale', name: 'Personale', icon: '🏠', color: '#ec4899' },
                     { id: 'riposo', name: 'Riposo', icon: '😴', color: '#94a3b8' }
                 ]
             };
@@ -675,8 +678,8 @@ function aiRispondi(domanda) {
             else risposta = '📋 Inizia da: <b>"' + todo[0].text + '"</b><br><br>💡 Fai il task più difficile quando hai più energia.';
         }
     } else if (q.indexOf('analizz') !== -1 || q.indexOf('produttività') !== -1) {
-        risposta = ' <b>Analisi:</b><br>✅ Task totali: <b>' + total + '</b><br>🔥 Streak: <b>' + streak + ' giorni</b><br> Media 7 giorni: <b>' + avgLast7 + ' task/giorno</b><br>🏆 Record: <b>' + stato.stats.bestDay + '</b><br><br>';
-        if (streak >= 7) risposta += ' <b>Wow!</b> Streak di ' + streak + ' giorni!';
+        risposta = '📊 <b>Analisi:</b><br>✅ Task totali: <b>' + total + '</b><br>🔥 Streak: <b>' + streak + ' giorni</b><br>📈 Media 7 giorni: <b>' + avgLast7 + ' task/giorno</b><br>🏆 Record: <b>' + stato.stats.bestDay + '</b><br><br>';
+        if (streak >= 7) risposta += '🎉 <b>Wow!</b> Streak di ' + streak + ' giorni!';
         else if (streak >= 3) risposta += '💪 <b>Bene!</b> Stai costruendo una buona abitudine.';
         else if (total > 0) risposta += '🌱 <b>Ottimo inizio!</b> Punta a 7 giorni di streak.';
         else risposta += '🚀 <b>Inizia!</b> Completa il tuo primo task oggi.';
@@ -684,24 +687,24 @@ function aiRispondi(domanda) {
         var consigli = [
             '🎯 <b>Regola dei 2 minuti:</b> se un task richiede meno di 2 minuti, fallo subito.',
             '⏱️ <b>Pomodoro:</b> 25 min focus + 5 min pausa. Dopo 4 cicli, pausa lunga.',
-            ' <b>Eat the Frog:</b> fai il task più difficile per primo.',
-            ' <b>Regola 1-3-5:</b> ogni giorno: 1 task grande, 3 medi, 5 piccoli.',
-            ' <b>Elimina distrazioni:</b> telefono in un\'altra stanza durante il focus.',
+            '🐸 <b>Eat the Frog:</b> fai il task più difficile per primo.',
+            '📝 <b>Regola 1-3-5:</b> ogni giorno: 1 task grande, 3 medi, 5 piccoli.',
+            '📵 <b>Elimina distrazioni:</b> telefono in un\'altra stanza durante il focus.',
             '💤 <b>Riposo = produttività:</b> dormire bene migliora focus e creatività.'
         ];
         risposta = consigli[Math.floor(Math.random() * consigli.length)];
     } else if (q.indexOf('motiv') !== -1 || q.indexOf('ispir') !== -1) {
         var frasi = [
             '🔥 "Il segreto per andare avanti è iniziare." - Mark Twight',
-            ' "Non contare i giorni, fai che i contino." - Muhammad Ali',
+            '💪 "Non contare i giorni, fai che i contino." - Muhammad Ali',
             '🚀 "Ogni esperto è stato un principiante. Non mollare!"',
             '⭐ "Il successo è la somma di piccoli sforzi ripetuti giorno dopo giorno."',
             '🎯 "La disciplina è il ponte tra obiettivi e risultati." - Jim Rohn',
-            ' "I diamanti si formano sotto pressione. Anche tu!"'
+            '💎 "I diamanti si formano sotto pressione. Anche tu!"'
         ];
         risposta = frasi[Math.floor(Math.random() * frasi.length)] + '<br><br>Hai già completato <b>' + total + ' task</b>. Immagina cosa puoi fare oggi!';
     } else if (q.indexOf('pattern') !== -1 || q.indexOf('abitudin') !== -1) {
-        risposta = ' <b>I tuoi pattern:</b><br>';
+        risposta = '🔍 <b>I tuoi pattern:</b><br>';
         var habits = stato.habits;
         if (habits.length > 0) {
             risposta += '📌 <b>' + habits.length + ' abitudini</b> tracciate:<br>';
@@ -714,9 +717,9 @@ function aiRispondi(domanda) {
     } else if (q.indexOf('ciao') !== -1 || q.indexOf('salve') !== -1) {
         risposta = 'Ciao! 👋 Hai <b>' + todo.length + ' task</b> in sospeso e streak di <b>' + streak + ' giorni</b>. Come posso aiutarti?';
     } else if (q.indexOf('grazie') !== -1) {
-        risposta = 'Prego!  Continua così, stai facendo un ottimo lavoro! 💪';
+        risposta = 'Prego! 😊 Continua così, stai facendo un ottimo lavoro! 💪';
     } else {
-        risposta = ' Prova a chiedermi:<br>• "Cosa dovrei fare ora?"<br>• "Analizza la mia produttività"<br>• "Dammi un consiglio"<br>• "Motivami!"';
+        risposta = '🤔 Prova a chiedermi:<br>• "Cosa dovrei fare ora?"<br>• "Analizza la mia produttività"<br>• "Dammi un consiglio"<br>• "Motivami!"';
     }
     return risposta;
 }
@@ -864,7 +867,7 @@ function renderTimeblocks() {
         div.className = 'time-block';
         div.style.borderLeftColor = color;
         div.style.background = color + '20';
-        div.innerHTML = '<div class="time">' + tb.start + ' - ' + tb.end + '</div><div class="attivita">' + (cat ? cat.icon + ' ' : '') + tb.attivita + '</div><button class="btn-delete">️</button>';
+        div.innerHTML = '<div class="time">' + tb.start + ' - ' + tb.end + '</div><div class="attivita">' + (cat ? cat.icon + ' ' : '') + tb.attivita + '</div><button class="btn-delete">🗑️</button>';
         div.querySelector('.btn-delete').addEventListener('click', function () {
             stato.timeblocks = stato.timeblocks.filter(function (t) { return t.id !== tb.id; });
             salva();
@@ -1002,6 +1005,41 @@ function detectOS() {
     return 'linux';
 }
 
+// ============ GESTIONE MODAL EVENTO (NUOVO/MODIFICA) ============
+function resetEventModal() {
+    editingEventId = null;
+    var modalTitle = document.getElementById('modal-event-title');
+    if (modalTitle) modalTitle.textContent = '📅 Nuovo Evento';
+    document.getElementById('input-event-title').value = '';
+    document.getElementById('input-event-date').value = oggiKey();
+    document.getElementById('input-event-time').value = '';
+    document.getElementById('input-event-duration').value = 60;
+    document.getElementById('input-event-desc').value = '';
+    document.getElementById('input-event-color').value = '#6366f1';
+    document.getElementById('input-event-notify').value = 15;
+    var btnDelete = document.getElementById('btn-delete-event');
+    if (btnDelete) btnDelete.style.display = 'none';
+}
+
+function apriModalModificaEvento(eventId) {
+    var ev = stato.events.find(function (e) { return e.id === eventId; });
+    if (!ev) return;
+
+    editingEventId = eventId;
+    var modalTitle = document.getElementById('modal-event-title');
+    if (modalTitle) modalTitle.textContent = '✏️ Modifica Evento';
+    document.getElementById('input-event-title').value = ev.title || '';
+    document.getElementById('input-event-date').value = ev.date || '';
+    document.getElementById('input-event-time').value = ev.time || '';
+    document.getElementById('input-event-duration').value = ev.duration || 60;
+    document.getElementById('input-event-desc').value = ev.description || '';
+    document.getElementById('input-event-color').value = ev.color || '#6366f1';
+    document.getElementById('input-event-notify').value = ev.notifyBefore !== undefined ? ev.notifyBefore : 15;
+    var btnDelete = document.getElementById('btn-delete-event');
+    if (btnDelete) btnDelete.style.display = 'inline-block';
+    document.getElementById('modal-event').classList.add('active');
+}
+
 function renderCalendar() {
     var grid = document.getElementById('calendar-grid');
     var title = document.getElementById('calendar-title');
@@ -1034,16 +1072,31 @@ function renderCalendar() {
         cell.className = 'calendar-cell' + (dateKey === todayKeyVal ? ' today' : '') + (dayEvents.length ? ' has-events' : '');
         var cellHTML = '<div class="cell-day">' + d + '</div>';
         dayEvents.slice(0, 3).forEach(function (e) {
-            cellHTML += '<div class="cell-event" style="background:' + (e.color || '#6366f1') + '" title="' + (e.time || '') + ' ' + e.title + '">' + (e.time ? e.time + ' ' : '') + e.title + '</div>';
+            cellHTML += '<div class="cell-event" data-event-id="' + e.id + '" style="background:' + (e.color || '#6366f1') + '" title="' + (e.time || '') + ' ' + e.title + '">' + (e.time ? e.time + ' ' : '') + e.title + '</div>';
         });
         if (dayEvents.length > 3) {
             cellHTML += '<div class="cell-more">+' + (dayEvents.length - 3) + ' altri</div>';
         }
         cell.innerHTML = cellHTML;
-        cell.addEventListener('click', function () {
+
+        // Click sulla cella (giorno)
+        cell.addEventListener('click', function (ev) {
+            // Se il click è su un evento esistente, non aprire nuovo evento
+            if (ev.target.classList.contains('cell-event')) return;
+            resetEventModal();
             document.getElementById('input-event-date').value = dateKey;
             document.getElementById('modal-event').classList.add('active');
         });
+
+        // Click diretto sugli eventi nel calendario
+        cell.querySelectorAll('.cell-event').forEach(function (evDiv) {
+            evDiv.addEventListener('click', function (ev) {
+                ev.stopPropagation();
+                var eventId = evDiv.getAttribute('data-event-id');
+                if (eventId) apriModalModificaEvento(eventId);
+            });
+        });
+
         grid.appendChild(cell);
     }
 
@@ -1080,15 +1133,29 @@ function renderUpcomingEvents() {
         var li = document.createElement('div');
         li.className = 'upcoming-event';
         li.style.borderLeftColor = e.color || '#6366f1';
-        li.innerHTML = '<div style="flex:1;"><div style="font-weight:600;">' + e.title + '</div><div style="font-size:12px;color:var(--text-dim);">' + when + '</div>' + (e.description ? '<div style="font-size:12px;margin-top:4px;">' + e.description + '</div>' : '') + '</div><button class="btn-delete">️</button>';
+        li.innerHTML = '<div style="flex:1;cursor:pointer;" class="event-info"><div style="font-weight:600;">' + e.title + '</div><div style="font-size:12px;color:var(--text-dim);">' + when + '</div>' + (e.description ? '<div style="font-size:12px;margin-top:4px;">' + e.description + '</div>' : '') + '</div><div class="upcoming-event-actions"><button class="btn-edit" title="Modifica">✏️</button><button class="btn-delete" title="Elimina">🗑️</button></div>';
+
+        // Click su info evento → modifica
+        li.querySelector('.event-info').addEventListener('click', function () {
+            apriModalModificaEvento(e.id);
+        });
+
+        // Click su modifica
+        li.querySelector('.btn-edit').addEventListener('click', function (ev) {
+            ev.stopPropagation();
+            apriModalModificaEvento(e.id);
+        });
+
+        // Click su elimina
         li.querySelector('.btn-delete').addEventListener('click', function (ev) {
             ev.stopPropagation();
-            if (confirm('Eliminare l\'evento "' + e.title + '"?')) {
+            if (confirm('🗑️ Eliminare l\'evento "' + e.title + '"?')) {
                 stato.events = stato.events.filter(function (x) { return x.id !== e.id; });
                 salva();
                 renderCalendar();
             }
         });
+
         lista.appendChild(li);
     });
 }
@@ -1106,13 +1173,33 @@ document.getElementById('btn-cal-today').addEventListener('click', function () {
     renderCalendar();
 });
 
+// Click su "+ Nuovo Evento" → reset e apertura modal
 document.getElementById('btn-add-event').addEventListener('click', function () {
-    document.getElementById('input-event-date').value = oggiKey();
+    resetEventModal();
     document.getElementById('modal-event').classList.add('active');
 });
+
+// Annulla → chiude modal e resetta
 document.getElementById('btn-cancel-event').addEventListener('click', function () {
+    resetEventModal();
     document.getElementById('modal-event').classList.remove('active');
 });
+
+// Elimina evento (solo in modalità modifica)
+document.getElementById('btn-delete-event').addEventListener('click', function () {
+    if (!editingEventId) return;
+    var ev = stato.events.find(function (e) { return e.id === editingEventId; });
+    if (!ev) return;
+    if (confirm('🗑️ Eliminare definitivamente l\'evento "' + ev.title + '"?')) {
+        stato.events = stato.events.filter(function (x) { return x.id !== editingEventId; });
+        salva();
+        resetEventModal();
+        document.getElementById('modal-event').classList.remove('active');
+        renderCalendar();
+    }
+});
+
+// Salva evento (crea nuovo O aggiorna esistente)
 document.getElementById('btn-save-event').addEventListener('click', function () {
     var title = document.getElementById('input-event-title').value.trim();
     var date = document.getElementById('input-event-date').value;
@@ -1127,30 +1214,41 @@ document.getElementById('btn-save-event').addEventListener('click', function () 
         return;
     }
 
-    stato.events.push({
-        id: uid(),
-        title: title,
-        date: date,
-        time: time,
-        duration: parseInt(duration),
-        description: description,
-        color: color,
-        notifyBefore: parseInt(notifyBefore),
-        created: new Date().toISOString()
-    });
+    if (editingEventId) {
+        // MODIFICA evento esistente
+        var ev = stato.events.find(function (e) { return e.id === editingEventId; });
+        if (ev) {
+            ev.title = title;
+            ev.date = date;
+            ev.time = time;
+            ev.duration = parseInt(duration);
+            ev.description = description;
+            ev.color = color;
+            ev.notifyBefore = parseInt(notifyBefore);
+        }
+    } else {
+        // CREAZIONE nuovo evento
+        stato.events.push({
+            id: uid(),
+            title: title,
+            date: date,
+            time: time,
+            duration: parseInt(duration),
+            description: description,
+            color: color,
+            notifyBefore: parseInt(notifyBefore),
+            created: new Date().toISOString()
+        });
+    }
 
-    document.getElementById('input-event-title').value = '';
-    document.getElementById('input-event-time').value = '';
-    document.getElementById('input-event-desc').value = '';
-    document.getElementById('input-event-duration').value = 60;
-    document.getElementById('input-event-notify').value = 15;
-
+    resetEventModal();
     document.getElementById('modal-event').classList.remove('active');
     salva();
     renderCalendar();
 
     if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('📅 Evento creato', {
+        var msg = editingEventId ? '📅 Evento modificato' : '📅 Evento creato';
+        new Notification(msg, {
             body: title + (time ? ' alle ' + time : '') + ' il ' + new Date(date).toLocaleDateString('it-IT')
         });
     }
@@ -1277,7 +1375,7 @@ document.getElementById('btn-save-security').addEventListener('click', function 
     var timeout = parseInt(document.getElementById('sec-timeout').value) || 0;
 
     if (!newUser) {
-        alert(' Username non può essere vuoto');
+        alert('❌ Username non può essere vuoto');
         return;
     }
     if (newPass && newPass !== newPass2) {
@@ -1311,7 +1409,7 @@ document.getElementById('btn-save-security').addEventListener('click', function 
         avviaMonitorInattivita();
     }
 
-    alert('✅ Impostazioni di sicurezza salvate!\n\n👤 Username: ' + newUser + '\n Rimani connesso: ' + (remember ? 'SÌ' : 'NO') + '\n⏱️ Timeout: ' + (timeout === 0 ? 'disattivato' : timeout + ' minuti'));
+    alert('✅ Impostazioni di sicurezza salvate!\n\n👤 Username: ' + newUser + '\n🔓 Rimani connesso: ' + (remember ? 'SÌ' : 'NO') + '\n⏱️ Timeout: ' + (timeout === 0 ? 'disattivato' : timeout + ' minuti'));
 });
 
 // ============ RENDER SETTINGS ============
@@ -1367,7 +1465,7 @@ document.getElementById('btn-export-md').addEventListener('click', function () {
     stato.oggi.forEach(function (t) {
         md += '- [' + (t.done ? 'x' : ' ') + '] ' + t.text + (t.time ? ' ⏰ ' + t.time : '') + '\n';
     });
-    md += '\n##  GTD\n\n';
+    md += '\n## 📥 GTD\n\n';
     stato.categories.gtd.forEach(function (ctx) {
         if (stato.gtd[ctx.id] && stato.gtd[ctx.id].length > 0) {
             md += '### ' + ctx.icon + ' ' + ctx.name + '\n\n';
